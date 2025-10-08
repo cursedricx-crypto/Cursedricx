@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Te amo, mi tamalito</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- iOS PWA / A2HS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tamalito 💙">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Theme color -->
+  <meta name="theme-color" content="#FFEE80">
+
+  <meta name="description" content="💙Te amo, mi tamalito💙 — app instalable, pantalla completa y sin conexión.">
+
+  <style>
+    :root{
+      --yellow1:#FFF5B0;
+      --yellow2:#FFE680;
+      --blue:#1976D2;
+      --text:#0b0b0b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: linear-gradient(135deg, var(--yellow1), var(--yellow2));
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: clamp(16px, 4vmin, 32px);
+    }
+    .card{
+      width:min(680px, 96vw);
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(6px);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      text-align:center;
+    }
+    h1{
+      margin: 8px 0 18px;
+      font-size: clamp(28px, 6vw, 44px);
+      line-height:1.15;
+    }
+    .blue-emojis{
+      font-size: clamp(22px, 5vw, 34px);
+    }
+    /* Corazoncito animado */
+    .heart-wrap{ display:flex; justify-content:center; margin: 20px 0 8px;}
+    .heart{
+      width: 120px; height: 120px;
+      position: relative;
+      transform: rotate(-45deg);
+      animation: beat 1.3s ease-in-out infinite;
+    }
+    .heart:before,
+    .heart:after{
+      content:"";
+      position:absolute;
+      width: 120px; height: 120px;
+      background: var(--blue);
+      border-radius: 50%;
+    }
+    .heart:before{ top:-60px; left:0; }
+    .heart:after{ left:60px; top:0; }
+    /* Outline shine */
+    .heart-outline{
+      position:absolute; inset:0; transform: rotate(45deg); pointer-events:none;
+      filter: drop-shadow(0 6px 10px rgba(25,118,210,0.35));
+    }
+    @keyframes beat{
+      0%, 100%{ transform: rotate(-45deg) scale(1); }
+      25%{ transform: rotate(-45deg) scale(1.1); }
+      50%{ transform: rotate(-45deg) scale(0.98); }
+      75%{ transform: rotate(-45deg) scale(1.08); }
+    }
+    .actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+    button{
+      border:none; border-radius:14px; padding:12px 18px; font-size:16px;
+      background: var(--blue); color:white; cursor:pointer;
+      box-shadow: 0 8px 18px rgba(25,118,210,0.28);
+    }
+    button:active{ transform: translateY(1px); }
+    footer{
+      margin-top:12px; font-size:12px; opacity:0.8;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="heart-wrap">
+      <div class="heart"></div>
+      <svg class="heart-outline" width="0" height="0" viewBox="0 0 1 1" aria-hidden="true"></svg>
+    </div>
+    <h1><span class="blue-emojis">💙</span> Te amo, mi tamalito <span class="blue-emojis">💙</span></h1>
+    <p>Instálala en tu teléfono y ábrela en pantalla completa, incluso sin internet.</p>
+
+    <div class="actions">
+      <button id="shareBtn" type="button">Compartir 💌</button>
+      <button id="installBtn" type="button" hidden>Instalar 📲</button>
+    </div>
+
+    <footer>Funciona offline • PWA • Hecha con amor 💛</footer>
+  </main>
+
+  <script>
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+
+    // Botón de compartir (Web Share API + fallback)
+    const shareBtn = document.getElementById('shareBtn');
+    shareBtn.addEventListener('click', async () => {
+      const shareData = {
+        title: 'Te amo, mi tamalito 💙',
+        text: '💙Te amo, mi tamalito💙 — una mini app PWA que funciona offline.',
+        url: location.href
+      };
+      try{
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(shareData.url);
+          alert('Enlace copiado. ¡Compártelo!');
+        } else {
+          prompt('Copia este enlace y compártelo:', shareData.url);
+        }
+      }catch(e){ /* usuario canceló */ }
+    });
+
+    // Manejador de instalación (Android/desktop). En iOS se usa "Añadir a pantalla de inicio"
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.hidden = false;
+    });
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+  </script>
+</body>
+</html>
